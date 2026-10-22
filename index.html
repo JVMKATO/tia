@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocuContable - Gestor de Inventario Documental</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <!-- Chart.js for Dashboard Visuals -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo & Brand -->
+        <div class="flex items-center space-x-3">
+          <div class="bg-brand-500 p-2 rounded-lg text-white shadow">
+            <i class="fa-solid fa-folder-tree text-xl"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg leading-tight tracking-wide">DocuContable</h1>
+            <p class="text-xs text-slate-400">Sistema de Ubicación y Control de Documentos</p>
+          </div>
+        </div>
+
+        <!-- Quick Action & User Info -->
+        <div class="flex items-center space-x-3">
+          <button onclick="openModal('new')" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center shadow transition-all transform active:scale-95">
+            <i class="fa-solid fa-plus mr-2"></i> Nuevo Documento
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- KPI / Statistics Cards Header -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <!-- Total -->
+      <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Archivos</p>
+          <h3 id="stat-total" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-slate-100 text-slate-600 rounded-xl">
+          <i class="fa-solid fa-box-archive text-xl"></i>
+        </div>
+      </div>
+
+      <!-- En Oficina -->
+      <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 flex items-center justify-between border-l-4 border-l-blue-500">
+        <div>
+          <p class="text-xs font-semibold text-blue-600 uppercase tracking-wider">En Oficina</p>
+          <h3 id="stat-oficina" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+          <i class="fa-solid fa-building text-xl"></i>
+        </div>
+      </div>
+
+      <!-- En Casa Actual -->
+      <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 flex items-center justify-between border-l-4 border-l-amber-500">
+        <div>
+          <p class="text-xs font-semibold text-amber-600 uppercase tracking-wider">En Casa (Actual)</p>
+          <h3 id="stat-casa-actual" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+          <i class="fa-solid fa-house text-xl"></i>
+        </div>
+      </div>
+
+      <!-- En Casa Pasada -->
+      <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 flex items-center justify-between border-l-4 border-l-purple-500">
+        <div>
+          <p class="text-xs font-semibold text-purple-600 uppercase tracking-wider">En Casa (Pasada)</p>
+          <h3 id="stat-casa-pasada" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-purple-50 text-purple-600 rounded-xl">
+          <i class="fa-solid fa-boxes-packing text-xl"></i>
+        </div>
+      </div>
+
+      <!-- Entregados -->
+      <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 flex items-center justify-between border-l-4 border-l-emerald-500">
+        <div>
+          <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">En el Cliente</p>
+          <h3 id="stat-cliente" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+          <i class="fa-solid fa-user-check text-xl"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Chart & Filter Controls Toggle -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 flex items-center">
+            <i class="fa-solid fa-magnifying-glass text-brand-600 mr-2"></i> Búsqueda e Inventario de Documentos
+          </h2>
+          <p class="text-xs text-slate-500">Encuentra al instante cualquier archivo y conoce su ubicación exacta actual.</p>
+        </div>
+        <div class="flex items-center space-x-2 w-full lg:w-auto">
+          <button onclick="toggleChartSection()" id="btn-toggle-chart" class="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center transition">
+            <i class="fa-solid fa-chart-pie mr-1.5"></i> Ver Estadísticas
+          </button>
+          <button onclick="resetFilters()" class="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center transition">
+            <i class="fa-solid fa-rotate-left mr-1.5"></i> Limpiar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- Chart Collapsible Wrapper -->
+      <div id="chart-container-wrapper" class="hidden mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <div class="h-56 flex justify-center">
+            <canvas id="locationChart"></canvas>
+          </div>
+          <div class="space-y-3">
+            <h4 class="text-sm font-semibold text-slate-700">Resumen Rápido por Ubicación</h4>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Mantén el control total de los documentos físicos. Identifica si un libro diario, balance o factura se encuentra en la oficina para trabajo activo, guardado en el archivo histórico de tu domicilio o entregado bajo constancia al cliente final.
+            </p>
+            <div class="flex flex-wrap gap-2 text-xs pt-2">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-medium">
+                <span class="w-2 h-2 rounded-full bg-blue-500 mr-1.5"></span> Oficina
+              </span>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-medium">
+                <span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span> Casa (Gestión Actual)
+              </span>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 font-medium">
+                <span class="w-2 h-2 rounded-full bg-purple-500 mr-1.5"></span> Casa (Gestión Pasada)
+              </span>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-medium">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span> Cliente
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search & Filters Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Search input -->
+        <div class="relative md:col-span-2 lg:col-span-1">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Buscar por Palabra Clave</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-search"></i>
+            </span>
+            <input type="text" id="search-input" oninput="applyFilters()" placeholder="Documento, cliente, NIT/CUIT..." class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition" />
+          </div>
+        </div>
+
+        <!-- Filter Location -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Ubicación Actual</label>
+          <select id="filter-location" onchange="applyFilters()" class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white">
+            <option value="">Todas las ubicaciones</option>
+            <option value="Casa (Gestión Actual)">Casa del Contador (Gestión Actual)</option>
+            <option value="Casa (Gestión Pasada)">Casa del Contador (Gestión Pasada)</option>
+            <option value="Oficina">Oficina del Contador</option>
+            <option value="Cliente">Entregado al Cliente</option>
+          </select>
+        </div>
+
+        <!-- Filter Year/Gestion -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Gestión / Año</label>
+          <select id="filter-year" onchange="applyFilters()" class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white">
+            <option value="">Todas las gestiones</option>
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022 o anterior</option>
+          </select>
+        </div>
+
+        <!-- Filter Category -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Documento</label>
+          <select id="filter-category" onchange="applyFilters()" class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white">
+            <option value="">Todos los tipos</option>
+            <option value="Balance General">Balance General</option>
+            <option value="Declaración Jurada">Declaración Jurada</option>
+            <option value="Libro IVA / Compras y Ventas">Libro IVA / Compras y Ventas</option>
+            <option value="Facturas y Comprobantes">Facturas y Comprobantes</option>
+            <option value="Planillas de Sueldos">Planillas de Sueldos</option>
+            <option value="Contrato / Legal">Contrato / Legal</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Documents Table / Grid List -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <!-- Header Table Bar -->
+      <div class="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50/50">
+        <div class="flex items-center space-x-2">
+          <span class="text-sm font-semibold text-slate-700">Resultados:</span>
+          <span id="results-count" class="bg-brand-100 text-brand-800 text-xs font-bold px-2.5 py-0.5 rounded-full">0 documentos</span>
+        </div>
+        <div class="text-xs text-slate-500">
+          <i class="fa-solid fa-circle-info text-brand-500 mr-1"></i> Haz clic sobre la ubicación para cambiarla rápidamente.
+        </div>
+      </div>
+
+      <!-- Desktop Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-100/70 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+              <th class="py-3.5 px-4">Documento / Tipo</th>
+              <th class="py-3.5 px-4">Cliente / ID</th>
+              <th class="py-3.5 px-4">Gestión</th>
+              <th class="py-3.5 px-4 text-center">Ubicación Actual</th>
+              <th class="py-3.5 px-4 text-center">Fotos</th>
+              <th class="py-3.5 px-4 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="documents-tbody" class="divide-y divide-slate-200 text-sm">
+            <!-- Dynamic rows will be inserted here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State Container -->
+      <div id="empty-state" class="hidden p-10 text-center">
+        <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+          <i class="fa-solid fa-folder-open text-2xl"></i>
+        </div>
+        <h3 class="text-base font-semibold text-slate-700">No se encontraron documentos</h3>
+        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">No hay registros que coincidan con los filtros seleccionados o no hay documentos cargados.</p>
+        <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-brand-600 text-white rounded-lg text-xs font-semibold hover:bg-brand-500 transition">
+          Restablecer Filtros
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: ADD / EDIT DOCUMENT -->
+  <div id="document-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full my-8 overflow-hidden transform transition-all border border-slate-200">
+      
+      <!-- Modal Header -->
+      <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <h3 id="modal-title" class="text-lg font-bold flex items-center">
+          <i class="fa-solid fa-file-circle-plus mr-2 text-brand-500"></i> Registrar Nuevo Documento
+        </h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl p-1 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Form -->
+      <form id="doc-form" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="doc-id" />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Titulo -->
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Título del Documento <span class="text-red-500">*</span></label>
+            <input type="text" id="doc-title" required placeholder="Ej: Balance General Auditoría 2024" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+          </div>
+
+          <!-- Cliente -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre del Cliente <span class="text-red-500">*</span></label>
+            <input type="text" id="doc-client" required placeholder="Ej: Comercial Los Andes S.R.L." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+          </div>
+
+          <!-- NIT / CUIT -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">NIT / CUIT / ID Cliente</label>
+            <input type="text" id="doc-nit" placeholder="Ej: 1029384019" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+          </div>
+
+          <!-- Tipo de Documento -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo de Documento <span class="text-red-500">*</span></label>
+            <select id="doc-category" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white">
+              <option value="Balance General">Balance General</option>
+              <option value="Declaración Jurada">Declaración Jurada</option>
+              <option value="Libro IVA / Compras y Ventas">Libro IVA / Compras y Ventas</option>
+              <option value="Facturas y Comprobantes">Facturas y Comprobantes</option>
+              <option value="Planillas de Sueldos">Planillas de Sueldos</option>
+              <option value="Contrato / Legal">Contrato / Legal</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+
+          <!-- Gestión / Año -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Gestión / Año <span class="text-red-500">*</span></label>
+            <input type="number" id="doc-year" min="1990" max="2030" required placeholder="2025" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+          </div>
+
+          <!-- Ubicación Actual -->
+          <div class="md:col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <label class="block text-xs font-bold text-slate-800 uppercase mb-1.5">
+              <i class="fa-solid fa-location-dot text-red-500 mr-1"></i> Ubicación Actual del Documento Físico <span class="text-red-500">*</span>
+            </label>
+            <select id="doc-location" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white font-medium">
+              <option value="Oficina">Oficina del Contador (Trabajo Activo)</option>
+              <option value="Casa (Gestión Actual)">Casa del Contador (Gestión Actual)</option>
+              <option value="Casa (Gestión Pasada)">Casa del Contador (Archivos de Gestiones Pasadas)</option>
+              <option value="Cliente">Entregado al Cliente / En poder del Cliente</option>
+            </select>
+            <p class="text-[11px] text-slate-500 mt-1">Si cambias la ubicación, el sistema registrará un evento en el historial de trazabilidad.</p>
+          </div>
+
+          <!-- Notas u Observaciones -->
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Notas u Observaciones Especiales</label>
+            <textarea id="doc-notes" rows="2" placeholder="Ej: Entregado en folder amarillo con sello de recepción..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none"></textarea>
+          </div>
+
+          <!-- Captura / Subida de Fotos -->
+          <div class="md:col-span-2 border-t border-slate-200 pt-3">
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Fotos / Escaneos Adjuntos</label>
+
+            <!-- Video Camera Stream Container (Hidden by default) -->
+            <div id="camera-container" class="hidden mb-3 bg-black rounded-xl overflow-hidden relative text-center">
+              <video id="webcam-video" autoplay playsinline class="w-full h-48 object-cover mx-auto"></video>
+              <div class="absolute bottom-3 left-0 right-0 flex justify-center space-x-2">
+                <button type="button" onclick="takePhoto()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow flex items-center">
+                  <i class="fa-solid fa-camera mr-1.5"></i> Capturar Foto
+                </button>
+                <button type="button" onclick="stopCamera()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-full text-xs font-semibold">
+                  Cancelar Cámara
+                </button>
+              </div>
+            </div>
+
+            <!-- Upload / Camera Trigger Buttons -->
+            <div class="flex flex-wrap gap-2 mb-3">
+              <button type="button" onclick="startCamera()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center transition">
+                <i class="fa-solid fa-camera-retro mr-1.5"></i> Usar Cámara Web
+              </button>
+              <label class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer flex items-center transition">
+                <i class="fa-solid fa-upload mr-1.5"></i> Subir Archivo Imagen
+                <input type="file" id="file-input" accept="image/*" multiple onchange="handleFileUpload(event)" class="hidden" />
+              </label>
+            </div>
+
+            <!-- Gallery Thumbnails Preview -->
+            <div id="photos-preview" class="flex flex-wrap gap-2 min-h-[50px] p-2 bg-slate-50 border border-dashed border-slate-300 rounded-lg items-center">
+              <span id="no-photos-text" class="text-xs text-slate-400 w-full text-center">Sin imágenes adjuntas</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="flex items-center justify-end space-x-3 border-t border-slate-200 pt-4 mt-4">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition">
+            Cancelar
+          </button>
+          <button type="submit" class="px-5 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow transition">
+            <i class="fa-solid fa-floppy-disk mr-1.5"></i> Guardar Documento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: VIEW DETAILS & HISTORIAL -->
+  <div id="detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full my-8 overflow-hidden transform transition-all border border-slate-200">
+      
+      <div class="bg-slate-800 text-white px-6 py-4 flex items-center justify-between">
+        <h3 class="text-base font-bold flex items-center">
+          <i class="fa-solid fa-file-lines mr-2 text-brand-400"></i> Ficha del Documento
+        </h3>
+        <button onclick="closeDetailModal()" class="text-slate-400 hover:text-white text-xl p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5">
+        <!-- Title & Location Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start gap-2 border-b border-slate-200 pb-4">
+          <div>
+            <span id="detail-category-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">Categoría</span>
+            <h2 id="detail-title" class="text-xl font-bold text-slate-900 mt-1">Título del Documento</h2>
+            <p id="detail-client-info" class="text-xs text-slate-500 mt-0.5">Cliente: - | NIT: -</p>
+          </div>
+          <div id="detail-location-badge-wrapper">
+            <!-- Badge populated by JS -->
+          </div>
+        </div>
+
+        <!-- Document Metadata -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+          <div>
+            <span class="text-slate-400 block font-medium">Gestión/Año:</span>
+            <span id="detail-year" class="font-bold text-slate-700 text-sm">-</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block font-medium">Fecha Registro:</span>
+            <span id="detail-created" class="font-semibold text-slate-700">-</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block font-medium">Fotos Adjuntas:</span>
+            <span id="detail-photos-count" class="font-semibold text-slate-700">0 imágenes</span>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-600 uppercase mb-1">Notas u Observaciones</h4>
+          <div id="detail-notes" class="bg-slate-50 p-3 rounded-lg text-xs text-slate-700 border border-slate-200 italic">
+            Sin observaciones registradas.
+          </div>
+        </div>
+
+        <!-- Attached Images Gallery -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-600 uppercase mb-2">Imágenes / Evidencia Digital</h4>
+          <div id="detail-photos-gallery" class="flex flex-wrap gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 min-h-[60px] items-center">
+            <!-- Images inserted here -->
+          </div>
+        </div>
+
+        <!-- Location History Timeline -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-600 uppercase mb-2">
+            <i class="fa-solid fa-clock-rotate-left mr-1 text-brand-600"></i> Trazabilidad / Historial de Ubicación
+          </h4>
+          <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 max-h-40 overflow-y-auto">
+            <ul id="detail-history-list" class="relative border-l border-slate-300 ml-3 space-y-3 py-1">
+              <!-- Timeline items inserted dynamically -->
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="bg-slate-100 px-6 py-3 border-t border-slate-200 flex justify-end">
+        <button onclick="closeDetailModal()" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-lg hover:bg-slate-700">
+          Cerrar Ficha
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LIGHTBOX MODAL FOR FULL IMAGE VIEW -->
+  <div id="lightbox-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4">
+    <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white text-2xl p-2 hover:text-slate-300">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <img id="lightbox-img" src="" alt="Vista Previa" class="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Initial Seed Data for Demo
+    const INITIAL_DOCUMENTS = [
+      {
+        id: 'doc-1',
+        title: 'Balance General y Estado de Resultados 2024',
+        client: 'Comercial Los Andes S.R.L.',
+        nit: '1029384019',
+        category: 'Balance General',
+        year: '2024',
+        location: 'Oficina',
+        notes: 'Listo para firma de la gerencia general. Ubicado en el escritorio principal.',
+        created: '2025-01-15 10:30',
+        photos: [
+          'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
+        ],
+        history: [
+          { date: '2025-01-15 10:30', location: 'Oficina', note: 'Registro inicial' }
+        ]
+      },
+      {
+        id: 'doc-2',
+        title: 'Libros de Ventas e IVA Compras (Gestión 2022)',
+        client: 'Importadora El Faro S.A.',
+        nit: '2049582011',
+        category: 'Libro IVA / Compras y Ventas',
+        year: '2022',
+        location: 'Casa (Gestión Pasada)',
+        notes: 'Empacado en caja Nro 4 del archivo muerto en el depósito de casa.',
+        created: '2023-03-10 14:20',
+        photos: [
+          'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=400&q=80'
+        ],
+        history: [
+          { date: '2023-03-10 14:20', location: 'Oficina', note: 'Registro de carpetas' },
+          { date: '2024-02-01 11:00', location: 'Casa (Gestión Pasada)', note: 'Traslado a archivo de casa por cierre de gestión' }
+        ]
+      },
+      {
+        id: 'doc-3',
+        title: 'Declaración Jurada Formulario 200 y 400 - Dic 2025',
+        client: 'Juan Carlos Pérez (Consultor)',
+        nit: '4930291015',
+        category: 'Declaración Jurada',
+        year: '2025',
+        location: 'Cliente',
+        notes: 'Entregado documento original con sello de cancelación de banco.',
+        created: '2026-01-08 09:15',
+        photos: [],
+        history: [
+          { date: '2026-01-08 09:15', location: 'Oficina', note: 'Elaboración y liquidación' },
+          { date: '2026-01-12 16:40', location: 'Cliente', note: 'Entregado a cliente bajo firma' }
+        ]
+      },
+      {
+        id: 'doc-4',
+        title: 'Planilla de Sueldos y Aportes Patronales Feb 2026',
+        client: 'Constructora Horizon Corp',
+        nit: '7748392018',
+        category: 'Planillas de Sueldos',
+        year: '2026',
+        location: 'Casa (Gestión Actual)',
+        notes: 'Traído a casa el fin de semana para revisión fina de horas extra.',
+        created: '2026-02-28 18:00',
+        photos: [
+          'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=400&q=80'
+        ],
+        history: [
+          { date: '2026-02-28 18:00', location: 'Casa (Gestión Actual)', note: 'Registro directo en domicilio' }
+        ]
+      },
+      {
+        id: 'doc-5',
+        title: 'Contrato de Arrendamiento y Facturas Fiscales',
+        client: 'Restaurante Sabor & Leña',
+        nit: '3392019022',
+        category: 'Contrato / Legal',
+        year: '2024',
+        location: 'Oficina',
+        notes: 'Folder azul de anillas en estante 2 de oficina.',
+        created: '2024-05-11 12:00',
+        photos: [],
+        history: [
+          { date: '2024-05-11 12:00', location: 'Oficina', note: 'Ingreso inicial' }
+        ]
+      }
+    ];
+
+    // Global State Application Variables
+    let documents = [...INITIAL_DOCUMENTS];
+    let currentPhotos = []; // Photos array for the active modal session
+    let mediaStream = null; // Camera stream reference
+    let locationChart = null; // Chart.js instance
+
+    // On Document Ready Initialization
+    document.addEventListener('DOMContentLoaded', () => {
+      renderDocuments();
+      initChart();
+      updateStats();
+    });
+
+    // Render Table Content according to filters
+    function renderDocuments() {
+      const tbody = document.getElementById('documents-tbody');
+      const emptyState = document.getElementById('empty-state');
+      
+      const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+      const locationFilter = document.getElementById('filter-location').value;
+      const yearFilter = document.getElementById('filter-year').value;
+      const categoryFilter = document.getElementById('filter-category').value;
+
+      // Filter Logic
+      const filteredDocs = documents.filter(doc => {
+        const matchesSearch = 
+          doc.title.toLowerCase().includes(searchTerm) ||
+          doc.client.toLowerCase().includes(searchTerm) ||
+          doc.nit.toLowerCase().includes(searchTerm) ||
+          doc.notes.toLowerCase().includes(searchTerm);
+
+        const matchesLocation = locationFilter === '' || doc.location === locationFilter;
+        
+        let matchesYear = true;
+        if (yearFilter !== '') {
+          if (yearFilter === '2022') {
+            matchesYear = parseInt(doc.year) <= 2022;
+          } else {
+            matchesYear = doc.year === yearFilter;
+          }
+        }
+
+        const matchesCategory = categoryFilter === '' || doc.category === categoryFilter;
+
+        return matchesSearch && matchesLocation && matchesYear && matchesCategory;
+      });
+
+      // Update Results Badge
+      document.getElementById('results-count').innerText = `${filteredDocs.length} documento${filteredDocs.length === 1 ? '' : 's'}`;
+
+      if (filteredDocs.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      // Populate Rows
+      tbody.innerHTML = filteredDocs.map(doc => {
+        const locationBadge = getLocationBadge(doc.location, doc.id);
+        const hasPhotos = doc.photos && doc.photos.length > 0;
+
+        return `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-200/80">
+            <!-- Document & Type -->
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-slate-800">${escapeHtml(doc.title)}</div>
+              <div class="text-xs text-slate-500 flex items-center mt-0.5">
+                <span class="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1.5"></span>
+                ${escapeHtml(doc.category)}
+              </div>
+            </td>
+
+            <!-- Client & NIT -->
+            <td class="py-3.5 px-4">
+              <div class="font-semibold text-slate-700">${escapeHtml(doc.client)}</div>
+              <div class="text-xs text-slate-400">NIT/CUIT: ${escapeHtml(doc.nit || 'S/N')}</div>
+            </td>
+
+            <!-- Year -->
+            <td class="py-3.5 px-4 font-semibold text-slate-700">
+              <span class="bg-slate-100 text-slate-800 text-xs px-2 py-0.5 rounded font-mono">${escapeHtml(doc.year)}</span>
+            </td>
+
+            <!-- Location with Quick Dropdown Change -->
+            <td class="py-3.5 px-4 text-center">
+              ${locationBadge}
+            </td>
+
+            <!-- Photos Status -->
+            <td class="py-3.5 px-4 text-center">
+              ${hasPhotos ? `
+                <button onclick="viewDocument('${doc.id}')" class="inline-flex items-center text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-full transition">
+                  <i class="fa-solid fa-camera mr-1"></i> ${doc.photos.length}
+                </button>
+              ` : `
+                <span class="text-xs text-slate-400 font-normal">Sin fotos</span>
+              `}
+            </td>
+
+            <!-- Actions -->
+            <td class="py-3.5 px-4 text-center">
+              <div class="flex items-center justify-center space-x-2">
+                <button onclick="viewDocument('${doc.id}')" title="Ver detalle e historial" class="p-1.5 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition">
+                  <i class="fa-solid fa-eye text-base"></i>
+                </button>
+                <button onclick="openModal('edit', '${doc.id}')" title="Editar documento" class="p-1.5 text-slate-600 hover:text-amber-600 hover:bg-slate-100 rounded-lg transition">
+                  <i class="fa-solid fa-pen-to-square text-base"></i>
+                </button>
+                <button onclick="deleteDocument('${doc.id}')" title="Eliminar registro" class="p-1.5 text-slate-600 hover:text-red-600 hover:bg-slate-100 rounded-lg transition">
+                  <i class="fa-solid fa-trash-can text-base"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Helper: Generate visual badge for location with quick select trigger
+    function getLocationBadge(location, docId) {
+      let badgeStyle = '';
+      let icon = '';
+
+      switch (location) {
+        case 'Oficina':
+          badgeStyle = 'bg-blue-100 text-blue-800 border-blue-200';
+          icon = 'fa-building';
+          break;
+        case 'Casa (Gestión Actual)':
+          badgeStyle = 'bg-amber-100 text-amber-800 border-amber-200';
+          icon = 'fa-house';
+          break;
+        case 'Casa (Gestión Pasada)':
+          badgeStyle = 'bg-purple-100 text-purple-800 border-purple-200';
+          icon = 'fa-boxes-packing';
+          break;
+        case 'Cliente':
+          badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+          icon = 'fa-user-check';
+          break;
+        default:
+          badgeStyle = 'bg-slate-100 text-slate-800 border-slate-200';
+          icon = 'fa-location-dot';
+      }
+
+      return `
+        <div class="relative inline-block group">
+          <select onchange="quickChangeLocation('${docId}', this.value)" class="cursor-pointer appearance-none text-xs font-semibold px-3 py-1.5 rounded-full border ${badgeStyle} focus:outline-none focus:ring-2 focus:ring-brand-500 pr-6">
+            <option value="Oficina" ${location === 'Oficina' ? 'selected' : ''}>🏢 En Oficina</option>
+            <option value="Casa (Gestión Actual)" ${location === 'Casa (Gestión Actual)' ? 'selected' : ''}>🏠 En Casa (Actual)</option>
+            <option value="Casa (Gestión Pasada)" ${location === 'Casa (Gestión Pasada)' ? 'selected' : ''}>📦 En Casa (Pasada)</option>
+            <option value="Cliente" ${location === 'Cliente' ? 'selected' : ''}>👤 En Cliente</option>
+          </select>
+          <i class="fa-solid fa-chevron-down absolute right-2.5 top-2.5 text-[10px] pointer-events-none opacity-60"></i>
+        </div>
+      `;
+    }
+
+    // Quick Update Location Handler
+    function quickChangeLocation(docId, newLocation) {
+      const doc = documents.find(d => d.id === docId);
+      if (!doc || doc.location === newLocation) return;
+
+      const oldLoc = doc.location;
+      doc.location = newLocation;
+      
+      const now = new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+      doc.history.unshift({
+        date: now,
+        location: newLocation,
+        note: `Cambio rápido de ubicación (${oldLoc} -> ${newLocation})`
+      });
+
+      updateStats();
+      updateChart();
+      renderDocuments();
+      showToast(`Ubicación actualizada a "${newLocation}"`, 'success');
+    }
+
+    // KPI & Stats Calculator
+    function updateStats() {
+      const total = documents.length;
+      const oficina = documents.filter(d => d.location === 'Oficina').length;
+      const casaActual = documents.filter(d => d.location === 'Casa (Gestión Actual)').length;
+      const casaPasada = documents.filter(d => d.location === 'Casa (Gestión Pasada)').length;
+      const cliente = documents.filter(d => d.location === 'Cliente').length;
+
+      document.getElementById('stat-total').innerText = total;
+      document.getElementById('stat-oficina').innerText = oficina;
+      document.getElementById('stat-casa-actual').innerText = casaActual;
+      document.getElementById('stat-casa-pasada').innerText = casaPasada;
+      document.getElementById('stat-cliente').innerText = cliente;
+    }
+
+    // Chart.js Setup
+    function initChart() {
+      const ctx = document.getElementById('locationChart').getContext('2d');
+      
+      locationChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: getChartData(),
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                font: { family: 'Inter', size: 11 },
+                usePointStyle: true,
+                padding: 12
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    function getChartData() {
+      const oficina = documents.filter(d => d.location === 'Oficina').length;
+      const casaActual = documents.filter(d => d.location === 'Casa (Gestión Actual)').length;
+      const casaPasada = documents.filter(d => d.location === 'Casa (Gestión Pasada)').length;
+      const cliente = documents.filter(d => d.location === 'Cliente').length;
+
+      return {
+        labels: ['Oficina', 'Casa (Gestión Actual)', 'Casa (Gestión Pasada)', 'En el Cliente'],
+        datasets: [{
+          data: [oficina, casaActual, casaPasada, cliente],
+          backgroundColor: ['#0284c7', '#f59e0b', '#a855f7', '#10b981'],
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }]
+      };
+    }
+
+    function updateChart() {
+      if (locationChart) {
+        locationChart.data = getChartData();
+        locationChart.update();
+      }
+    }
+
+    function toggleChartSection() {
+      const wrapper = document.getElementById('chart-container-wrapper');
+      const btn = document.getElementById('btn-toggle-chart');
+      
+      if (wrapper.classList.contains('hidden')) {
+        wrapper.classList.remove('hidden');
+        btn.classList.add('bg-brand-100', 'text-brand-800');
+      } else {
+        wrapper.classList.add('hidden');
+        btn.classList.remove('bg-brand-100', 'text-brand-800');
+      }
+    }
+
+    // Modal Operations (Add / Edit)
+    function openModal(mode, docId = null) {
+      const modal = document.getElementById('document-modal');
+      const modalTitle = document.getElementById('modal-title');
+      const form = document.getElementById('doc-form');
+
+      form.reset();
+      currentPhotos = [];
+      renderPhotosPreview();
+
+      if (mode === 'edit' && docId) {
+        const doc = documents.find(d => d.id === docId);
+        if (!doc) return;
+
+        modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square mr-2 text-amber-500"></i> Editar Documento`;
+        document.getElementById('doc-id').value = doc.id;
+        document.getElementById('doc-title').value = doc.title;
+        document.getElementById('doc-client').value = doc.client;
+        document.getElementById('doc-nit').value = doc.nit || '';
+        document.getElementById('doc-category').value = doc.category;
+        document.getElementById('doc-year').value = doc.year;
+        document.getElementById('doc-location').value = doc.location;
+        document.getElementById('doc-notes').value = doc.notes || '';
+
+        currentPhotos = [...(doc.photos || [])];
+        renderPhotosPreview();
+      } else {
+        modalTitle.innerHTML = `<i class="fa-solid fa-file-circle-plus mr-2 text-brand-500"></i> Registrar Nuevo Documento`;
+        document.getElementById('doc-id').value = '';
+        document.getElementById('doc-year').value = new Date().getFullYear();
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      stopCamera();
+      document.getElementById('document-modal').classList.add('hidden');
+    }
+
+    // Save/Submit Form Logic
+    function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const docId = document.getElementById('doc-id').value;
+      const title = document.getElementById('doc-title').value.trim();
+      const client = document.getElementById('doc-client').value.trim();
+      const nit = document.getElementById('doc-nit').value.trim();
+      const category = document.getElementById('doc-category').value;
+      const year = document.getElementById('doc-year').value;
+      const location = document.getElementById('doc-location').value;
+      const notes = document.getElementById('doc-notes').value.trim();
+
+      const now = new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+
+      if (docId) {
+        // Edit Existing Document
+        const index = documents.findIndex(d => d.id === docId);
+        if (index !== -1) {
+          const oldLoc = documents[index].location;
+          const locChanged = oldLoc !== location;
+
+          documents[index] = {
+            ...documents[index],
+            title,
+            client,
+            nit,
+            category,
+            year,
+            location,
+            notes,
+            photos: [...currentPhotos]
+          };
+
+          if (locChanged) {
+            documents[index].history.unshift({
+              date: now,
+              location: location,
+              note: `Ubicación cambiada de "${oldLoc}" a "${location}"`
+            });
+          }
+
+          showToast('Documento actualizado con éxito', 'success');
+        }
+      } else {
+        // Create New Document
+        const newDoc = {
+          id: 'doc-' + Date.now(),
+          title,
+          client,
+          nit,
+          category,
+          year,
+          location,
+          notes,
+          created: now,
+          photos: [...currentPhotos],
+          history: [
+            { date: now, location: location, note: 'Registro inicial de documento' }
+          ]
+        };
+
+        documents.unshift(newDoc);
+        showToast('Nuevo documento registrado correctamente', 'success');
+      }
+
+      closeModal();
+      updateStats();
+      updateChart();
+      renderDocuments();
+    }
+
+    // Delete Document
+    function deleteDocument(docId) {
+      const doc = documents.find(d => d.id === docId);
+      if (!doc) return;
+
+      if (confirm(`¿Estás seguro de eliminar el registro "${doc.title}"? Esta acción no se puede deshacer.`)) {
+        documents = documents.filter(d => d.id !== docId);
+        showToast('Documento eliminado del inventario', 'warning');
+        updateStats();
+        updateChart();
+        renderDocuments();
+      }
+    }
+
+    // View Detailed Modal
+    function viewDocument(docId) {
+      const doc = documents.find(d => d.id === docId);
+      if (!doc) return;
+
+      document.getElementById('detail-title').innerText = doc.title;
+      document.getElementById('detail-category-badge').innerText = doc.category;
+      document.getElementById('detail-client-info').innerText = `Cliente: ${doc.client} | CUIT/NIT: ${doc.nit || 'Sin Registrar'}`;
+      document.getElementById('detail-year').innerText = doc.year;
+      document.getElementById('detail-created').innerText = doc.created || 'N/A';
+      document.getElementById('detail-notes').innerText = doc.notes || 'Sin observaciones adicionales.';
+      document.getElementById('detail-photos-count').innerText = `${doc.photos.length} imagen(es)`;
+
+      // Badge Location
+      const locationBadge = getLocationBadge(doc.location, doc.id);
+      document.getElementById('detail-location-badge-wrapper').innerHTML = locationBadge;
+
+      // Gallery Images
+      const gallery = document.getElementById('detail-photos-gallery');
+      if (doc.photos && doc.photos.length > 0) {
+        gallery.innerHTML = doc.photos.map(src => `
+          <img src="${src}" onclick="openLightbox('${src}')" class="w-16 h-16 object-cover rounded-lg border border-slate-300 cursor-pointer hover:opacity-80 transition hover:scale-105 shadow-sm" alt="Foto adjunta" />
+        `).join('');
+      } else {
+        gallery.innerHTML = `<span class="text-xs text-slate-400">No se adjuntaron fotografías ni escaneos.</span>`;
+      }
+
+      // History Timeline Render
+      const historyList = document.getElementById('detail-history-list');
+      historyList.innerHTML = doc.history.map(item => `
+        <li class="mb-2 ml-4">
+          <div class="absolute w-2.5 h-2.5 bg-brand-600 rounded-full -left-1.25 border border-white mt-1"></div>
+          <time class="text-[10px] font-mono text-slate-400">${item.date}</time>
+          <div class="text-xs font-semibold text-slate-800">${escapeHtml(item.location)}</div>
+          <p class="text-[11px] text-slate-500">${escapeHtml(item.note)}</p>
+        </li>
+      `).join('');
+
+      document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+    }
+
+    // Camera Web API logic
+    async function startCamera() {
+      const cameraContainer = document.getElementById('camera-container');
+      const video = document.getElementById('webcam-video');
+
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        video.srcObject = mediaStream;
+        cameraContainer.classList.remove('hidden');
+      } catch (err) {
+        alert("No se pudo acceder a la cámara web. Verifica los permisos del navegador.");
+        console.error("Camera access error:", err);
+      }
+    }
+
+    function stopCamera() {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+      }
+      document.getElementById('camera-container').classList.add('hidden');
+    }
+
+    function takePhoto() {
+      const video = document.getElementById('webcam-video');
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      currentPhotos.push(dataUrl);
+      renderPhotosPreview();
+      stopCamera();
+      showToast('Captura realizada con éxito', 'info');
+    }
+
+    // File Upload Handler
+    function handleFileUpload(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          currentPhotos.push(e.target.result);
+          renderPhotosPreview();
+        };
+        reader.readAsDataURL(file);
+      });
+      showToast('Imagen(es) adjuntada(s)', 'info');
+    }
+
+    function renderPhotosPreview() {
+      const container = document.getElementById('photos-preview');
+      if (currentPhotos.length === 0) {
+        container.innerHTML = `<span id="no-photos-text" class="text-xs text-slate-400 w-full text-center">Sin imágenes adjuntas</span>`;
+        return;
+      }
+
+      container.innerHTML = currentPhotos.map((src, index) => `
+        <div class="relative group w-14 h-14">
+          <img src="${src}" class="w-full h-full object-cover rounded-lg border border-slate-300 shadow-sm" />
+          <button type="button" onclick="removePhoto(${index})" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] hover:bg-red-700 transition">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function removePhoto(index) {
+      currentPhotos.splice(index, 1);
+      renderPhotosPreview();
+    }
+
+    // Lightbox image viewer
+    function openLightbox(src) {
+      document.getElementById('lightbox-img').src = src;
+      document.getElementById('lightbox-modal').classList.remove('hidden');
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox-modal').classList.add('hidden');
+    }
+
+    // Filter controls
+    function applyFilters() {
+      renderDocuments();
+    }
+
+    function resetFilters() {
+      document.getElementById('search-input').value = '';
+      document.getElementById('filter-location').value = '';
+      document.getElementById('filter-year').value = '';
+      document.getElementById('filter-category').value = '';
+      renderDocuments();
+    }
+
+    // Toast Notifications System
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+
+      let bgColors = 'bg-slate-800 text-white';
+      let icon = 'fa-circle-info text-brand-400';
+
+      if (type === 'success') {
+        bgColors = 'bg-slate-900 text-white border-l-4 border-emerald-500';
+        icon = 'fa-circle-check text-emerald-400';
+      } else if (type === 'warning') {
+        bgColors = 'bg-slate-900 text-white border-l-4 border-amber-500';
+        icon = 'fa-triangle-exclamation text-amber-400';
+      }
+
+      toast.className = `p-3 rounded-xl shadow-lg text-xs font-medium flex items-center space-x-2 pointer-events-auto transform transition-all duration-300 translate-y-2 opacity-0 ${bgColors}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icon} text-sm"></i>
+        <span>${escapeHtml(message)}</span>
+      `;
+
+      container.appendChild(toast);
+
+      // Animate in
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      // Animate out
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Helper: Security HTML string escaping
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+  </script>
+</body>
+</html>
